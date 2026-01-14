@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block title %}Trash - SmartNotes{% endblock %}
+
+{% block content %}
+<div class="trash-container">
+    <div class="trash-header">
+        <div class="header-top">
+            <h1>Trash</h1>
+            {% if trash_notes %}
+            <button class="btn btn-danger" onclick="clearAllTrash()" id="clearAllBtn">
+                <span class="material-icons">delete_sweep</span>
+                Clear All
+            </button>
+            {% endif %}
+        </div>
+        <p>Notes are permanently deleted after 30 days</p>
+    </div>
+    
+    <div class="notes-grid" id="trashGrid">
+        {% for note in trash_notes %}
+        <div class="note-card trash-note" data-note-id="{{ note.id }}">
+            <div class="note-header">
+                <h3 class="note-title">{{ note.title }}</h3>
+                <div class="note-actions">
+                    <button class="action-btn restore-btn" onclick="restoreNote('{{ note.id }}')" title="Restore note">
+                        <span class="material-icons">restore</span>
+                    </button>
+                    <button class="action-btn delete-btn" onclick="permanentDelete('{{ note.id }}')" title="Delete permanently">
+                        <span class="material-icons">delete_forever</span>
+                    </button>
+                </div>
+            </div>
+            <div class="note-content">
+                {{ note.content[:200] }}{% if note.content|length > 200 %}...{% endif %}
+            </div>
+            <div class="note-footer">
+                <span class="note-date">Deleted: {{ note.deleted_at[:10] }}</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    {% if not trash_notes %}
+    <div class="empty-state">
+        <span class="material-icons">delete</span>
+        <h2>Trash is empty</h2>
+        <p>Deleted notes will appear here</p>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.trash-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.trash-header {
+    margin-bottom: 30px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.trash-header h1 {
+    font-size: 28px;
+    color: #202124;
+    margin: 0;
+}
+
+.trash-header p {
+    color: #9aa0a6;
+    margin: 0;
+    font-size: 14px;
+}
+
+/* Clear All Button */
+.btn-danger {
+    background-color: #d93025;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.btn-danger:hover {
+    background-color: #b71c1c;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(217, 48, 37, 0.3);
+}
+
+.trash-note {
+    border-left: 4px solid #d93025;
+    opacity: 0.9;
+}
+
+.trash-note:hover {
+    opacity: 1;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.note-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.restore-btn {
+    color: #1a73e8;
+    background: rgba(26, 115, 232, 0.1);
+}
+
+.restore-btn:hover {
+    background: rgba(26, 115, 232, 0.2);
+}
+
+.delete-btn {
+    color: #d93025;
+    background: rgba(217, 48, 37, 0.1);
+}
+
+.delete-btn:hover {
+    background: rgba(217, 48, 37, 0.2);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 80px 20px;
+    color: #9aa0a6;
+}
+
+.empty-state .material-icons {
+    font-size: 64px;
+    margin-bottom: 20px;
+    opacity: 0.5;
+}
+
+.empty-state h2 {
+    font-size: 24px;
+    margin-bottom: 10px;
+    color: #5f6368;
+}
+
+.empty-state p {
+    font-size: 16px;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function restoreNote(noteId) {
+    if (confirm('Are you sure you want to restore this note?')) {
+        fetch('/restore_note/' + noteId, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        });
+    }
+}
+
+function permanentDelete(noteId) {
+    if (confirm('Are you sure you want to permanently delete this note? This action cannot be undone.')) {
+        fetch('/permanent_delete/' + noteId, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        });
+    }
+}
+
+function clearAllTrash() {
+    if (confirm('Are you sure you want to permanently delete ALL notes in trash? This action cannot be undone.')) {
+
+        const btn = document.getElementById('clearAllBtn');
+        btn.innerHTML = '<span class="material-icons">hourglass_empty</span> Deleting...';
+        btn.disabled = true;
+        
+
+        const noteCards = document.querySelectorAll('.trash-note');
+        const noteIds = Array.from(noteCards).map(card => card.dataset.noteId);
+
+        let deletePromises = noteIds.map(noteId => 
+            fetch('/permanent_delete/' + noteId, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            })
+        );
+    
+        Promise.all(deletePromises)
+            .then(responses => Promise.all(responses.map(r => r.json())))
+            .then(results => {
+                if (results.every(r => r.success)) {
+                    location.reload();
+                } else {
+                    alert('Some notes could not be deleted. Please try again.');
+                    location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Error clearing trash:', error);
+                alert('An error occurred. Please try again.');
+                location.reload();
+            });
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}View Note - SmartNotes{% endblock %}
+
+{% block content %}
+<div class="editor-container">
+    <div class="editor-header">
+        <div class="editor-actions-left">
+            <button class="btn btn-secondary" onclick='window.location.href="{{ url_for('notes') }}"'>
+                <span class="material-icons">arrow_back</span>
+                Back to Notes
+            </button>
+        </div>
+        
+        <div class="editor-title">
+            <input type="text" id="noteTitle" value="{{ note.title }}" placeholder="Note title..." readonly>
+        </div>
+        
+        <div class="editor-actions-right">
+            <span class="view-only-badge">
+                <span class="material-icons">visibility</span>
+                View Only
+            </span>
+            <button class="btn btn-primary" onclick="window.location.href='{{ url_for('notes') }}'">
+                <span class="material-icons">check</span>
+                Done
+            </button>
+        </div>
+    </div>
+    
+    <div class="editor-content">
+        <div id="noteEditor" class="editor-textarea view-only">
+            {{ note.content|safe }}
+        </div>
+    </div>
+    
+    <div class="editor-status">
+        <span id="saveStatus">🔒 Locked Note - Read Only</span>
+        <span id="wordCount">0 words</span>
+    </div>
+</div>
+
+<style>
+.view-only-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background-color: #e8f0fe;
+    color: #1a73e8;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    margin-right: 12px;
+}
+
+.view-only {
+    background-color: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    cursor: not-allowed;
+    color: #5f6368;
+}
+
+.view-only:focus {
+    outline: none;
+}
+
+#noteTitle[readonly] {
+    background-color: #f8f9fa;
+    cursor: not-allowed;
+    border: none;
+    color: #5f6368;
+}
+
+#saveStatus {
+    color: #fbbc04;
+    font-weight: 500;
+}
+
+.editor-textarea {
+    min-height: 400px;
+    padding: 20px;
+    line-height: 1.6;
+    color: #202124;
+    font-size: 16px;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function updateWordCount() {
+    const content = document.getElementById('noteEditor').textContent;
+    const words = content.trim().split(/\s+/).filter(word => word.length > 0);
+    document.getElementById('wordCount').textContent = words.length + ' words';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    updateWordCount();
+    
+    const editor = document.getElementById('noteEditor');
+    editor.addEventListener('click', function() {
+        this.style.backgroundColor = '#f1f3f4';
+        setTimeout(() => {
+            this.style.backgroundColor = '#f8f9fa';
+        }, 200);
+    });
+    
+    editor.addEventListener('mouseenter', function() {
+        this.style.borderColor = '#dadce0';
+    });
+    
+    editor.addEventListener('mouseleave', function() {
+        this.style.borderColor = '#e0e0e0';
+    });
+});
+</script>
+{% endblock %}

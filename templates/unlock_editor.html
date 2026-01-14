@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}Unlock Note - SmartNotes{% endblock %}
+
+{% block content %}
+<div class="unlock-container">
+    <div class="unlock-card">
+        <div class="unlock-header">
+            <span class="material-icons unlock-icon">lock</span>
+            <h1>Note is Locked</h1>
+            <p>This note is protected with a password</p>
+        </div>
+        
+        <div class="unlock-form">
+            <div class="form-group">
+                <label for="unlockPassword">Enter Password:</label>
+                <input type="password" id="unlockPassword" placeholder="Enter note password" autofocus>
+            </div>
+            
+            <div class="unlock-buttons">
+                <button class="btn btn-secondary" onclick="window.location.href='{{ url_for('notes') }}'">
+                    <span class="material-icons">arrow_back</span>
+                    Back to Notes
+                </button>
+                <button class="btn btn-primary" onclick="unlockNote()">
+                    <span class="material-icons">lock_open</span>
+                    Unlock Note
+                </button>
+            </div>
+        </div>
+        
+        <p class="unlock-footer">
+            Forgot password? You'll need to delete and recreate this note.
+        </p>
+    </div>
+</div>
+
+<style>
+.unlock-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.unlock-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 48px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    max-width: 400px;
+    width: 100%;
+    text-align: center;
+}
+
+.unlock-header {
+    margin-bottom: 32px;
+}
+
+.unlock-icon {
+    font-size: 64px;
+    color: #fbbc04;
+    margin-bottom: 16px;
+    animation: lockBounce 1s infinite;
+}
+
+@keyframes lockBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.unlock-header h1 {
+    font-size: 28px;
+    font-weight: 500;
+    color: #202124;
+    margin-bottom: 8px;
+}
+
+.unlock-header p {
+    color: #5f6368;
+    font-size: 16px;
+}
+
+.unlock-form {
+    margin-bottom: 24px;
+}
+
+.unlock-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.unlock-footer {
+    margin-top: 24px;
+    color: #9aa0a6;
+    font-size: 14px;
+}
+
+.form-group {
+    margin-bottom: 24px;
+    text-align: left;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #5f6368;
+    font-weight: 500;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: border-color 0.3s ease;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #1a73e8;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function unlockNote() {
+    const password = document.getElementById('unlockPassword').value;
+    
+    if (!password) {
+        alert('Please enter a password');
+        return;
+    }
+    
+    fetch('/unlock_for_edit/{{ note_id }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            password: password
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+
+            window.location.href = '/edit_note/{{ note_id }}?unlocked=true';
+        } else {
+            alert(data.error || 'Incorrect password');
+            document.getElementById('unlockPassword').value = '';
+            document.getElementById('unlockPassword').focus();
+        }
+    });
+}
+
+document.getElementById('unlockPassword').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        unlockNote();
+    }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('unlockPassword').focus();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,357 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Note - SmartNotes{% endblock %}
+
+{% block content %}
+<div class="editor-container">
+    <div class="editor-header">
+        <div class="editor-actions-left">
+            <button class="btn btn-secondary" onclick='window.location.href="{{ url_for('notes') }}"'>
+                <span class="material-icons">arrow_back</span>
+                Back to Notes
+            </button>
+        </div>
+        
+        <div class="editor-title">
+            {% if note.title and note.title != 'New Note' and note.title != 'Untitled Note' %}
+                <input type="text" id="noteTitle" value="{{ note.title }}" placeholder="Add your title here...">
+            {% else %}
+                <input type="text" id="noteTitle" value="" placeholder="Add your title here...">
+            {% endif %}
+        </div>
+        
+        <div class="editor-actions-right">
+            <button class="btn btn-secondary" onclick="saveNote()" id="saveBtn">
+                <span class="material-icons">save</span>
+                Save
+            </button>
+            <button class="btn btn-primary" onclick="saveAndExit()">
+                <span class="material-icons">check</span>
+                Done
+            </button>
+        </div>
+    </div>
+    
+    <div class="editor-toolbar">
+        <div class="toolbar-group">
+            <button class="toolbar-btn" onclick="formatText('bold')" title="Bold">
+                <span class="material-icons">format_bold</span>
+            </button>
+            <button class="toolbar-btn" onclick="formatText('italic')" title="Italic">
+                <span class="material-icons">format_italic</span>
+            </button>
+            <button class="toolbar-btn" onclick="formatText('underline')" title="Underline">
+                <span class="material-icons">format_underlined</span>
+            </button>
+        </div>
+        
+        <div class="toolbar-group">
+            <button class="toolbar-btn" onclick="formatText('insertUnorderedList')" title="Bullet List">
+                <span class="material-icons">format_list_bulleted</span>
+            </button>
+            <button class="toolbar-btn" onclick="formatText('insertOrderedList')" title="Numbered List">
+                <span class="material-icons">format_list_numbered</span>
+            </button>
+        </div>
+        
+        <div class="toolbar-group">
+            <button class="toolbar-btn" onclick="formatText('justifyLeft')" title="Align Left">
+                <span class="material-icons">format_align_left</span>
+            </button>
+            <button class="toolbar-btn" onclick="formatText('justifyCenter')" title="Align Center">
+                <span class="material-icons">format_align_center</span>
+            </button>
+            <button class="toolbar-btn" onclick="formatText('justifyRight')" title="Align Right">
+                <span class="material-icons">format_align_right</span>
+            </button>
+        </div>
+    </div>
+    
+    <div class="editor-content">
+        <div id="noteEditor" contenteditable="true" class="editor-textarea">
+            {{ note.content|safe }}
+        </div>
+    </div>
+    
+    <div class="editor-status">
+        <span id="saveStatus">Auto-saved</span>
+        <span id="wordCount">0 words</span>
+    </div>
+</div>
+
+<style>
+.editor-container {
+    max-width: 800px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.editor-header {
+    display: flex;
+    align-items: center;
+    padding: 16px 24px;
+    border-bottom: 1px solid #e0e0e0;
+    gap: 16px;
+}
+
+.editor-actions-left, .editor-actions-right {
+    display: flex;
+    gap: 8px;
+}
+
+.editor-title {
+    flex: 1;
+}
+
+.editor-title input {
+    width: 100%;
+    border: none;
+    outline: none;
+    font-size: 24px;
+    font-weight: 500;
+    color: #202124;
+    padding: 8px 0;
+}
+
+.editor-title input::placeholder {
+    color: #9aa0a6;
+    font-weight: 400;
+}
+
+.editor-toolbar {
+    display: flex;
+    align-items: center;
+    padding: 12px 24px;
+    border-bottom: 1px solid #e0e0e0;
+    gap: 16px;
+    background-color: #f8f9fa;
+}
+
+.toolbar-group {
+    display: flex;
+    gap: 4px;
+}
+
+.toolbar-btn {
+    background: none;
+    border: none;
+    padding: 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #5f6368;
+    transition: all 0.3s ease;
+}
+
+.toolbar-btn:hover {
+    background-color: #e8eaed;
+    color: #202124;
+}
+
+.editor-content {
+    padding: 24px;
+    min-height: 400px;
+}
+
+.editor-textarea {
+    min-height: 400px;
+    outline: none;
+    font-size: 16px;
+    line-height: 1.6;
+    color: #202124;
+    padding: 20px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    transition: border-color 0.3s ease;
+}
+
+.editor-textarea:focus {
+    border-color: #1a73e8;
+    background-color: #f8f9fa;
+}
+
+.editor-status {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 24px;
+    border-top: 1px solid #e0e0e0;
+    font-size: 14px;
+    color: #9aa0a6;
+}
+
+#saveStatus {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+#saveStatus.show {
+    opacity: 1;
+}
+
+.btn-primary {
+    background-color: #1a73e8;
+    color: white;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background-color: #1557b0;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(26, 115, 232, 0.3);
+}
+
+.btn-secondary {
+    background-color: #f1f3f4;
+    color: #202124;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+    background-color: #e8eaed;
+    transform: translateY(-2px);
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.auto-saving {
+    animation: pulse 1s infinite;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let autoSaveTimer;
+let noteId = "{{ note_id }}";
+
+function formatText(command) {
+    document.execCommand(command, false, null);
+    document.getElementById('noteEditor').focus();
+    updateWordCount();
+}
+
+function saveNote() {
+    const title = document.getElementById('noteTitle').value || 'Untitled Note';
+    const content = document.getElementById('noteEditor').innerHTML;
+    
+    fetch('/update_note/' + noteId, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            title: title,
+            content: content
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showSaveStatus('Saved');
+        }
+    });
+}
+
+function saveAndExit() {
+    saveNote();
+    setTimeout(function() {
+        window.location.href = "{{ url_for('notes') }}";
+    }, 500);
+}
+
+function showSaveStatus(message) {
+    const status = document.getElementById('saveStatus');
+    status.textContent = message;
+    status.classList.add('show');
+    
+    setTimeout(() => {
+        status.classList.remove('show');
+    }, 2000);
+}
+
+function updateWordCount() {
+    const content = document.getElementById('noteEditor').textContent;
+    const words = content.trim().split(/\s+/).filter(word => word.length > 0);
+    document.getElementById('wordCount').textContent = words.length + ' words';
+}
+
+function setupAutoSave() {
+    const editor = document.getElementById('noteEditor');
+    const title = document.getElementById('noteTitle');
+    
+    function triggerAutoSave() {
+        clearTimeout(autoSaveTimer);
+        autoSaveTimer = setTimeout(() => {
+            saveNote();
+            showSaveStatus('Auto-saved');
+        }, 2000);
+    }
+    
+    editor.addEventListener('input', function() {
+        triggerAutoSave();
+        updateWordCount();
+    });
+    
+    title.addEventListener('input', triggerAutoSave);
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey || e.metaKey) {
+        switch(e.key) {
+            case 's':
+                e.preventDefault();
+                saveNote();
+                break;
+            case 'b':
+                e.preventDefault();
+                formatText('bold');
+                break;
+            case 'i':
+                e.preventDefault();
+                formatText('italic');
+                break;
+            case 'u':
+                e.preventDefault();
+                formatText('underline');
+                break;
+        }
+    }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    setupAutoSave();
+    updateWordCount();
+    document.getElementById('noteEditor').focus();
+    
+    const editor = document.getElementById('noteEditor');
+    if (editor.innerHTML.trim() === '') {
+        editor.innerHTML = '<p><br></p>';
+    }
+});
+
+document.getElementById('noteEditor').addEventListener('paste', function(e) {
+    e.preventDefault();
+    const text = e.clipboardData.getData('text/plain');
+    document.execCommand('insertText', false, text);
+});
+</script>
+{% endblock %}
